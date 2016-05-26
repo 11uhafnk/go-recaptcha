@@ -8,11 +8,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/11uhafnk/go-recaptcha"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"github.com/dpapathanasiou/go-recaptcha"
+	"strings"
 )
 
 var recaptcha_public_key string
@@ -32,7 +33,7 @@ const (
 	anAck      = `<p class="ack">%s</p>`
 )
 
-// processRequest accepts the http.Request object, finds the reCaptcha form variables which 
+// processRequest accepts the http.Request object, finds the reCaptcha form variables which
 // were input and sent by HTTP POST to the server, then calls the recaptcha package's Confirm()
 // method, which returns a boolean indicating whether or not the client answered the form correctly.
 func processRequest(request *http.Request) (result bool) {
@@ -40,13 +41,13 @@ func processRequest(request *http.Request) (result bool) {
 	challenge, challenge_found := request.Form["recaptcha_challenge_field"]
 	recaptcha_resp, resp_found := request.Form["recaptcha_response_field"]
 	if challenge_found && resp_found {
-		result = recaptcha.Confirm("127.0.0.1", challenge[0], recaptcha_resp[0])
+		result = recaptcha.Confirm(request.RemoteAddr[:strings.Index(request.RemoteAddr, ":")], challenge[0], recaptcha_resp[0])
 	}
 	return
 }
 
 // homePage is a simple HTTP handler which produces a basic HTML page
-// (as defined by the pageTop and pageBottom constants), including 
+// (as defined by the pageTop and pageBottom constants), including
 // an input form with a reCaptcha challenge.
 // If the http.Request object indicates the form input has been posted,
 // it calls processRequest() and displays a message indicating whether or not
@@ -55,6 +56,7 @@ func processRequest(request *http.Request) (result bool) {
 func homePage(writer http.ResponseWriter, request *http.Request) {
 	err := request.ParseForm() // Must be called before writing response
 	fmt.Fprint(writer, pageTop)
+
 	if err != nil {
 		fmt.Fprintf(writer, fmt.Sprintf(anError, err))
 	} else {
@@ -76,6 +78,7 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 // It launches a simple web server on port 9001 which produces the reCaptcha input form and checks the client
 // input if the form is posted.
 func main() {
+	log.Printf("startttt")
 	if len(os.Args) != 3 {
 		fmt.Printf("usage: %s <reCaptcha public key> <reCaptcha private key>\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
